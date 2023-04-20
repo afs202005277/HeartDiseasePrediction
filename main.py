@@ -8,23 +8,35 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.preprocessing import LabelEncoder
 import time
 
-data = pd.read_csv('dataset.csv')
+target_column = "is_claim"
+train_data = pd.read_csv('train.csv')
 
-print(data.head())
-print(data.info())
-print(data.describe())
+print(train_data.head())
+print(train_data.info())
+# print(train_data.describe())
 # Handle missing values, outliers, and scaling, if needed
+train_data['policy_id'] = train_data['policy_id'].apply(lambda x: x.replace('ID', ''))
+train_data['area_cluster'] = train_data['area_cluster'].apply(lambda x: x.replace('C', ''))
+train_data = pd.get_dummies(train_data, columns=['segment', 'fuel_type', 'engine_type', 'rear_brakes_type', 'steering_type'])
+train_data['model'] = train_data['model'].apply(lambda x: x.replace('M', ''))
+train_data = train_data.replace({"Yes": True, "No": False})
+encoder = LabelEncoder()
+train_data['transmission_type'] = encoder.fit_transform(train_data['transmission_type'])
 
-
+train_data['max_torque'] = train_data['max_torque'].apply(lambda s: float(s.split('Nm@')[0]) * float(s.split('Nm@')[1].replace('rpm', '')))
+train_data['max_power'] = train_data['max_power'].apply(lambda s: float(s.split('bhp@')[0]) * float(s.split('bhp@')[1].replace('rpm', '')))
 # Define the features (X) and the target (y)
-X = data.drop('target_column', axis=1)
-y = data['target_column']
+X = train_data.drop(target_column, axis=1)
+y = train_data[target_column]
 
-# Split the data into training and test sets
+# Split the train_data into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
+print(X_train)
+print(y_train)
 # Define the classifiers
 classifiers = {
     'Decision Tree': DecisionTreeClassifier(),
@@ -36,7 +48,8 @@ classifiers = {
 # Train and evaluate the classifiers
 results = []
 
-for name, classifier in classifiers.items():
+for (name, classifier) in classifiers.items():
+    print((name, classifier))
     # Train the model
     start_time = time.time()
     classifier.fit(X_train, y_train)
@@ -49,7 +62,7 @@ for name, classifier in classifiers.items():
 
     # Calculate evaluation metrics
     conf_matrix = confusion_matrix(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average='weighted')
+    precision = precision_score(y_test, y_pred, average='weighted', zero_division=1)
     recall = recall_score(y_test, y_pred, average='weighted')
     accuracy = accuracy_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred, average='weighted')
@@ -73,7 +86,5 @@ print(results_df)
 
 # Visualize the results (e.g., using Seaborn or Matplotlib)
 # Example: Plotting the accuracy of different classifiers
-plt.figure(figsize=(10, 6))
 sns.barplot(x='Classifier', y='Accuracy', data=results_df)
-plt.title('Classifier Accuracy Comparison')
 plt.show()
