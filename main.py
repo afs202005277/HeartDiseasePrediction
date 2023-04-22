@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, accuracy_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
@@ -33,10 +33,8 @@ X = train_data.drop(target_column, axis=1)
 y = train_data[target_column]
 
 # Split the train_data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-print(X_train)
-print(y_train)
 # Define the classifiers
 classifiers = {
     'Decision Tree': DecisionTreeClassifier(),
@@ -48,36 +46,42 @@ classifiers = {
 # Train and evaluate the classifiers
 results = []
 
+skf = StratifiedKFold(n_splits=3)
+
+
 for (name, classifier) in classifiers.items():
-    print((name, classifier))
-    # Train the model
-    start_time = time.time()
-    classifier.fit(X_train, y_train)
-    train_time = time.time() - start_time
+    for train_index, test_index in skf.split(X, y):
+        X_train, X_test = X.values[train_index], X.values[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        print((name, classifier))
+        # Train the model
+        start_time = time.time()
+        classifier.fit(X_train, y_train)
+        train_time = time.time() - start_time
 
-    # Test the model
-    start_time = time.time()
-    y_pred = classifier.predict(X_test)
-    test_time = time.time() - start_time
+        # Test the model
+        start_time = time.time()
+        y_pred = classifier.predict(X_test)
+        test_time = time.time() - start_time
 
-    # Calculate evaluation metrics
-    conf_matrix = confusion_matrix(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average='weighted', zero_division=1)
-    recall = recall_score(y_test, y_pred, average='weighted')
-    accuracy = accuracy_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred, average='weighted')
+        # Calculate evaluation metrics
+        conf_matrix = confusion_matrix(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=1)
+        recall = recall_score(y_test, y_pred, average='weighted')
+        accuracy = accuracy_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred, average='weighted')
 
-    # Store the results
-    results.append({
-        'Classifier': name,
-        'Confusion Matrix': conf_matrix,
-        'Precision': precision,
-        'Recall': recall,
-        'Accuracy': accuracy,
-        'F1 Score': f1,
-        'Train Time': train_time,
-        'Test Time': test_time
-    })
+        # Store the results
+        results.append({
+            'Classifier': name,
+            'Confusion Matrix': conf_matrix,
+            'Precision': precision,
+            'Recall': recall,
+            'Accuracy': accuracy,
+            'F1 Score': f1,
+            'Train Time': train_time,
+            'Test Time': test_time
+        })
 # Convert the results into a DataFrame
 results_df = pd.DataFrame(results)
 
