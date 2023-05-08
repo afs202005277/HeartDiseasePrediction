@@ -20,20 +20,23 @@ print(train_data.info())
 # Handle missing values, outliers, and scaling, if needed
 train_data['policy_id'] = train_data['policy_id'].apply(lambda x: x.replace('ID', ''))
 train_data['area_cluster'] = train_data['area_cluster'].apply(lambda x: x.replace('C', ''))
-train_data = pd.get_dummies(train_data, columns=['segment', 'fuel_type', 'engine_type', 'rear_brakes_type', 'steering_type'])
+train_data = pd.get_dummies(train_data,
+                            columns=['segment', 'fuel_type', 'engine_type', 'rear_brakes_type', 'steering_type'])
 train_data['model'] = train_data['model'].apply(lambda x: x.replace('M', ''))
 train_data = train_data.replace({"Yes": True, "No": False})
 encoder = LabelEncoder()
 train_data['transmission_type'] = encoder.fit_transform(train_data['transmission_type'])
 
-train_data['max_torque'] = train_data['max_torque'].apply(lambda s: float(s.split('Nm@')[0]) * float(s.split('Nm@')[1].replace('rpm', '')))
-train_data['max_power'] = train_data['max_power'].apply(lambda s: float(s.split('bhp@')[0]) * float(s.split('bhp@')[1].replace('rpm', '')))
+train_data['max_torque'] = train_data['max_torque'].apply(
+    lambda s: float(s.split('Nm@')[0]) * float(s.split('Nm@')[1].replace('rpm', '')))
+train_data['max_power'] = train_data['max_power'].apply(
+    lambda s: float(s.split('bhp@')[0]) * float(s.split('bhp@')[1].replace('rpm', '')))
 # Define the features (X) and the target (y)
 X = train_data.drop(target_column, axis=1)
 y = train_data[target_column]
 
 # Split the train_data into training and test sets
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 # Define the classifiers
 classifiers = {
@@ -47,7 +50,6 @@ classifiers = {
 results = []
 
 skf = StratifiedKFold(n_splits=3)
-
 
 for (name, classifier) in classifiers.items():
     for train_index, test_index in skf.split(X, y):
